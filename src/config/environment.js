@@ -14,5 +14,21 @@ export const env = {
     JWT_SECRET: process.env.JWT_SECRET,
     BUILD_MODE: process.env.BUILD_MODE,
 
-    AUTHOR: process.env.AUTHOR
+    AUTHOR: process.env.AUTHOR,
+
+// MOMO
+  MOMO_PARTNER_CODE: process.env.MOMO_PARTNER_CODE,
+  MOMO_ACCESS_KEY: process.env.MOMO_ACCESS_KEY,
+  MOMO_SECRET_KEY: process.env.MOMO_SECRET_KEY,
+  MOMO_ENDPOINT: process.env.MOMO_ENDPOINT,
+  MOMO_REDIRECT_URL: process.env.MOMO_REDIRECT_URL,
+  MOMO_IPN_URL: process.env.MOMO_IPN_URL,
+  
+  // VNPAY
+  VNPAY_TMN_CODE: process.env.VNPAY_TMN_CODE,
+  VNPAY_HASH_SECRET: process.env.VNPAY_HASH_SECRET,
+  VNPAY_URL: process.env.VNPAY_URL,
+  VNPAY_RETURN_URL: process.env.VNPAY_RETURN_URL,
+  VNPAY_IPN_URL: process.env.VNPAY_IPN_URL,
+  CLIENT_URL: process.env.CLIENT_URL
 }

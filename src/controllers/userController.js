@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 /* eslint-disable no-console */
 /* eslint-disable quotes */
 import { userService } from "~/services/userService"
@@ -29,6 +30,52 @@ const login = async (req, res) => {
   }
 }
 
+const getCurrentUser = async (req, res, next) => {
+  try {
+    console.log('👤 [getCurrentUser] Fetching current user info...')
+    console.log('User from token:', req.user)
+
+    // ⬅️ SỬA: Token lưu `id` chứ không phải `userId`
+    const userId = req.user.id || req.user.userId
+
+    if (!userId) {
+      throw new Error('Missing userId in token')
+    }
+
+    console.log('🔍 Finding user with ID:', userId)
+
+    const user = await userService.findOneById(userId)
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      })
+    }
+
+    console.log('✅ User found:', user.username)
+
+    res.status(200).json({
+      success: true,
+      message: 'Get current user successfully',
+      user: {
+        userId: user._id.toString(),
+        username: user.username,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      }
+    })
+  } catch (error) {
+    console.error('❌ [getCurrentUser] Error:', error.message)
+    res.status(500).json({
+      success: false,
+      message: error.message
+    })
+  }
+}
 // 🟢 CRUD khác
 const getAll = async (req, res) => {
   try {
@@ -81,6 +128,7 @@ const remove = async (req, res) => {
 export const userController = {
   register,
   login,
+  getCurrentUser,
   getAll,
   getById,
   create,

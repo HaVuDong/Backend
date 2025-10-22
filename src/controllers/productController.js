@@ -1,102 +1,133 @@
-/* eslint-disable quotes */
-import { productService } from "~/services/productService";
-import { StatusCodes } from "http-status-codes";
+import { StatusCodes } from 'http-status-codes'
+import { productService } from '~/services/productService'
+
+const getAllProducts = async (req, res, next) => {
+  try {
+    const { page, limit, status, sortBy, sortOrder } = req.query
+    // ⬅️ SỬA: Gọi đúng tên function
+    const result = await productService.getAllProducts({ page, limit, status, sortBy, sortOrder })
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
+const createProduct = async (req, res, next) => {
+  try {
+    // ⬅️ SỬA: Gọi đúng tên function
+    const product = await productService.createProduct(req.body)
+    res.status(StatusCodes.CREATED).json({
+      message: 'Product created successfully',
+      product
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+const getProductById = async (req, res, next) => {
+  try {
+    const { id } = req.params
+    // ⬅️ SỬA: Gọi đúng tên function
+    const product = await productService.getProductById(id)
+    res.status(StatusCodes.OK).json(product)
+  } catch (error) {
+    next(error)
+  }
+}
+
+const getProductBySlug = async (req, res, next) => {
+  try {
+    const { slug } = req.params
+    // ⬅️ SỬA: Gọi đúng tên function
+    const product = await productService.getProductBySlug(slug)
+    res.status(StatusCodes.OK).json(product)
+  } catch (error) {
+    next(error)
+  }
+}
+
+const updateProduct = async (req, res, next) => {
+  try {
+    const { id } = req.params
+    // ⬅️ SỬA: Gọi đúng tên function
+    const product = await productService.updateProduct(id, req.body)
+    res.status(StatusCodes.OK).json({
+      message: 'Product updated successfully',
+      product
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+const deleteProduct = async (req, res, next) => {
+  try {
+    const { id } = req.params
+    // ⬅️ SỬA: Gọi đúng tên function
+    await productService.deleteProduct(id)
+    res.status(StatusCodes.OK).json({
+      message: 'Product deleted successfully'
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+const searchProducts = async (req, res, next) => {
+  try {
+    const { search } = req.query
+    // ⬅️ THÊM: Function search (nếu chưa có trong service)
+    const result = await productService.getAllProducts({ search })
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
+const getProductsByCategory = async (req, res, next) => {
+  try {
+    const { categoryId } = req.params
+    const { page, limit } = req.query
+    // ⬅️ SỬA: Gọi đúng tên function
+    const result = await productService.getProductsByCategory(categoryId, { page, limit })
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
+const getTopSellingProducts = async (req, res, next) => {
+  try {
+    const { limit = 10 } = req.query
+    // ⬅️ SỬA: Gọi đúng tên function
+    const result = await productService.getTopSellingProducts(parseInt(limit))
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
+const getLowStockProducts = async (req, res, next) => {
+  try {
+    const { threshold = 10 } = req.query
+    // ⬅️ SỬA: Gọi đúng tên function
+    const result = await productService.getLowStockProducts(parseInt(threshold))
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
 
 export const productController = {
-  // 🟢 Lấy tất cả sản phẩm
-  async getAll(req, res, next) {
-    try {
-      const products = await productService.getAll();
-      res.status(StatusCodes.OK).json({
-        success: true,
-        data: products
-      });
-    } catch (error) {
-      console.error("❌ Lỗi khi lấy danh sách sản phẩm:", error);
-      next(error);
-    }
-  },
-
-  // 🟢 Lấy chi tiết 1 sản phẩm theo ID
-  async getById(req, res, next) {
-    try {
-      const product = await productService.getById(req.params.id);
-      if (!product) {
-        return res.status(StatusCodes.NOT_FOUND).json({
-          success: false,
-          message: "Không tìm thấy sản phẩm!"
-        });
-      }
-      res.status(StatusCodes.OK).json({
-        success: true,
-        data: product
-      });
-    } catch (error) {
-      console.error("❌ Lỗi khi lấy sản phẩm theo ID:", error);
-      next(error);
-    }
-  },
-
-  // 🟡 Thêm mới sản phẩm
-  async create(req, res, next) {
-    try {
-      const data = req.body;
-
-      // Kiểm tra dữ liệu cơ bản
-      if (!data.name || !data.price) {
-        return res.status(StatusCodes.BAD_REQUEST).json({
-          success: false,
-          message: "Thiếu thông tin bắt buộc: name hoặc price!"
-        });
-      }
-
-      const result = await productService.create({
-        ...data,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      });
-
-      res.status(StatusCodes.CREATED).json({
-        success: true,
-        message: "Thêm sản phẩm thành công!",
-        data: result
-      });
-    } catch (error) {
-      console.error("❌ Lỗi khi thêm sản phẩm:", error);
-      next(error);
-    }
-  },
-
-  // 🟠 Cập nhật sản phẩm
-  async update(req, res, next) {
-    try {
-      const result = await productService.update(req.params.id, {
-        ...req.body,
-        updatedAt: new Date()
-      });
-      res.status(StatusCodes.OK).json({
-        success: true,
-        message: "Cập nhật sản phẩm thành công!",
-        data: result
-      });
-    } catch (error) {
-      console.error("❌ Lỗi khi cập nhật sản phẩm:", error);
-      next(error);
-    }
-  },
-
-  // 🔴 Xóa sản phẩm
-  async remove(req, res, next) {
-    try {
-      const result = await productService.remove(req.params.id);
-      res.status(StatusCodes.OK).json({
-        success: true,
-        message: "Đã xóa sản phẩm thành công!",
-        data: result
-      });
-    } catch (error) {
-      console.error("❌ Lỗi khi xóa sản phẩm:", error);
-      next(error);
-    }
-  }
-};
+  getAllProducts,
+  createProduct,
+  getProductById,
+  getProductBySlug,
+  updateProduct,
+  deleteProduct,
+  searchProducts,
+  getProductsByCategory,
+  getTopSellingProducts,
+  getLowStockProducts
+}

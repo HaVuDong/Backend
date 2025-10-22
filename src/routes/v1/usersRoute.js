@@ -14,6 +14,10 @@ Router.post("/login", userController.login)
 Router.get("/admin-only", authMiddleware, isAdmin, (req, res) => {
   res.json({ success: true, message: "Welcome Admin!" })
 })
+Router.get('/me',
+  authMiddleware, // ⬅️ Yêu cầu JWT token
+  userController.getCurrentUser
+)
 
 // CRUD người dùng
 Router.route("/")

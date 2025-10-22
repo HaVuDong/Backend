@@ -10,17 +10,14 @@ import { userModel } from "~/models/userModel"
 const register = async (data) => {
   console.log("📩 Dữ liệu nhận được:", data)
 
-  // Làm sạch dữ liệu đầu vào
   const cleanEmail = data.email?.trim().toLowerCase()
   const cleanUsername = data.username?.trim()
   const cleanPhone = data.phone?.trim()
 
-  // 🧩 Validate đầu vào
   if (!cleanEmail || !data.password || !cleanPhone || !cleanUsername) {
     throw new Error("Thiếu dữ liệu")
   }
 
-  // 🔎 Kiểm tra username hợp lệ: chỉ chữ thường, không dấu, không khoảng trắng
   const usernameRegex = /^[a-z0-9_]+$/
   if (!usernameRegex.test(cleanUsername)) {
     throw new Error(
@@ -28,20 +25,16 @@ const register = async (data) => {
     )
   }
 
-  // Kiểm tra trùng username (không phân biệt hoa thường)
   const existUsername = await userModel.findByUsername(cleanUsername.toLowerCase())
   if (existUsername) throw new Error("Username đã tồn tại")
 
-  // Kiểm tra trùng email
   const existEmail = await userModel.findByEmail(cleanEmail)
   if (existEmail) throw new Error("Email đã tồn tại")
 
-  // Mã hóa mật khẩu
   const hashedPassword = await bcrypt.hash(data.password, 10)
 
-  // Lưu vào database
   const result = await userModel.createNew({
-    username: cleanUsername.toLowerCase(), // luôn lưu dạng chữ thường
+    username: cleanUsername.toLowerCase(),
     email: cleanEmail,
     password: hashedPassword,
     phone: cleanPhone,
@@ -67,18 +60,15 @@ const login = async ({ identifier, password }) => {
   if (!loginInput || !password)
     throw new Error("Thiếu username/email hoặc mật khẩu")
 
-  // Tìm user bằng email hoặc username (đều lowercase)
   const user =
     (await userModel.findByEmail(loginInput)) ||
     (await userModel.findByUsername(loginInput))
 
   if (!user) throw new Error("User not found")
 
-  // So khớp mật khẩu
   const match = await bcrypt.compare(password, user.password)
   if (!match) throw new Error("Sai mật khẩu")
 
-  // Tạo token JWT
   const token = jwt.sign(
     {
       id: user._id,
@@ -104,6 +94,19 @@ const login = async ({ identifier, password }) => {
   }
 }
 
+// ⭐ THÊM FUNCTION NÀY - QUAN TRỌNG!
+const findOneById = async (id) => {
+  try {
+    console.log('🔍 [userService.findOneById] Looking for user ID:', id)
+    const user = await userModel.findOneById(id)
+    console.log('✅ [userService.findOneById] Found:', user ? 'YES' : 'NO')
+    return user
+  } catch (error) {
+    console.error('❌ [userService.findOneById] Error:', error)
+    throw error
+  }
+}
+
 // 🟢 Các hàm khác
 const getAll = async () => userModel.getAll()
 const getById = async (id) => userModel.findOneById(id)
@@ -111,10 +114,11 @@ const create = async (data) => userModel.createNew(data)
 const update = async (id, data) => userModel.update(id, data)
 const remove = async (id) => userModel.deleteOne(id)
 
-// 🟢 Export tất cả
+// ⭐ EXPORT ĐẦY ĐỦ
 export const userService = {
   register,
   login,
+  findOneById,  // ⬅️ THÊM DÒNG NÀY
   getAll,
   getById,
   create,

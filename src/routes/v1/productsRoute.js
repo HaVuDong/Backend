@@ -1,22 +1,43 @@
-/* eslint-disable semi */
-import express from 'express';
-import { productController } from '~/controllers/productController';
+import express from 'express'
+import { productValidation } from '~/validations/productValidation'
+import { productController } from '~/controllers/productController'
+import { authMiddleware, isAdmin } from '~/middlewares/authMiddleware'
 
-const Router = express.Router();
+const Router = express.Router()
 
-// 🟢 Lấy tất cả sản phẩm
-Router.get('/', productController.getAll);
+// PUBLIC ROUTES
+Router.get('/', productController.getAllProducts)
+Router.get('/search', productController.searchProducts)
+Router.get('/top-selling', productController.getTopSellingProducts)
+Router.get('/category/:categoryId', productController.getProductsByCategory)
+Router.get('/slug/:slug', productController.getProductBySlug)
+Router.get('/:id', productController.getProductById)
 
-// 🟢 Lấy chi tiết 1 sản phẩm theo ID
-Router.get('/:id', productController.getById);
+// ADMIN ONLY ROUTES
+Router.post('/',
+  authMiddleware,
+  isAdmin,
+  productValidation.createProduct,
+  productController.createProduct
+)
 
-// 🟡 Thêm mới sản phẩm
-Router.post('/', productController.create);
+Router.put('/:id',
+  authMiddleware,
+  isAdmin,
+  productValidation.updateProduct,
+  productController.updateProduct
+)
 
-// 🟡 Cập nhật sản phẩm
-Router.put('/:id', productController.update);
+Router.delete('/:id',
+  authMiddleware,
+  isAdmin,
+  productController.deleteProduct
+)
 
-// 🟡 Xoá sản phẩm
-Router.delete('/:id', productController.remove);
+Router.get('/admin/low-stock',
+  authMiddleware,
+  isAdmin,
+  productController.getLowStockProducts
+)
 
-export const productsRoute = Router;
+export const productRoute = Router
