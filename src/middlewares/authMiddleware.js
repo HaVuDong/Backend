@@ -26,14 +26,19 @@ export const authMiddleware = (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
 
     console.log("✅ Token hợp lệ!")
-    console.log("👤 User info:", {
-      userId: decoded.userId,
-      username: decoded.username,
-      role: decoded.role
-    })
+    console.log("👤 Decoded token:", decoded)
 
-    // Gắn thông tin user vào request
-    req.user = decoded
+    // ⭐ CHUẨN HÓA req.user (luôn có _id)
+    req.user = {
+      _id: decoded._id || decoded.userId || decoded.id, // ⭐ Ưu tiên _id
+      userId: decoded.userId || decoded._id || decoded.id,
+      username: decoded.username,
+      email: decoded.email,
+      role: decoded.role
+    }
+
+    console.log("✅ req.user standardized:", req.user)
+
     next()
   } catch (error) {
     console.error("❌ [authMiddleware] Lỗi xác thực:", error.message)
@@ -133,7 +138,7 @@ export const isOwner = (req, res, next) => {
     console.log("🔑 [isOwner] Checking ownership...")
 
     // Lấy userId từ params, query hoặc body
-    const userId = req.params.userId || req.query.userId || req.body.userId
+    const targetUserId = req.params.userId || req.query.userId || req.body.userId
 
     if (!req.user) {
       return res.status(401).json({
@@ -149,7 +154,7 @@ export const isOwner = (req, res, next) => {
     }
 
     // User chỉ truy cập data của mình
-    if (req.user.userId !== userId) {
+    if (req.user._id.toString() !== targetUserId) {
       return res.status(403).json({
         success: false,
         message: "Bạn chỉ có thể truy cập dữ liệu của chính mình"

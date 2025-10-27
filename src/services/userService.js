@@ -54,6 +54,7 @@ const register = async (data) => {
   }
 }
 
+
 // 🟢 Đăng nhập
 const login = async ({ identifier, password }) => {
   const loginInput = identifier?.trim().toLowerCase()
@@ -69,15 +70,15 @@ const login = async ({ identifier, password }) => {
   const match = await bcrypt.compare(password, user.password)
   if (!match) throw new Error("Sai mật khẩu")
 
+  // ✅ Token có đầy đủ userId, username, role
   const token = jwt.sign(
     {
-      id: user._id,
-      email: user.email,
-      phone: user.phone,
+      userId: user._id.toString(),
+      username: user.username,
       role: user.role
     },
     process.env.JWT_SECRET,
-    { expiresIn: "1d" }
+    { expiresIn: "7d" }
   )
 
   console.log("✅ Đăng nhập thành công:", user.username)
@@ -93,6 +94,7 @@ const login = async ({ identifier, password }) => {
     }
   }
 }
+
 
 // ⭐ THÊM FUNCTION NÀY - QUAN TRỌNG!
 const findOneById = async (id) => {
