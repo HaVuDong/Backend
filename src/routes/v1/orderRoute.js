@@ -11,7 +11,7 @@ const Router = express.Router()
 // POST /api/v1/orders - Tạo đơn hàng
 Router.route('/')
   .post(orderValidation.createOrder, orderController.createOrder)
-  .get(orderController.getOrders)
+  .get(orderController.getAllOrders)
 
 // GET /api/v1/orders/:id - Xem chi tiết đơn hàng
 Router.route('/:id')
@@ -26,7 +26,7 @@ Router.route('/:id/status')
   .put(
     // authMiddleware.isAdmin, // Tạm thời comment
     orderValidation.updateStatus,
-    orderController.updateStatus
+    orderController.updateOrderStatus
   )
 
 // GET /api/v1/orders/admin/all - Lấy tất cả đơn hàng (admin only)

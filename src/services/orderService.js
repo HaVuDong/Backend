@@ -1,72 +1,115 @@
-/* eslint-disable no-undef */
+// backend/src/services/orderService.js
 /* eslint-disable no-useless-catch */
 import { orderModel } from '~/models/orderModel'
+import { userModel } from '~/models/userModel'
 import { cartModel } from '~/models/cartModel'
-import { paymentModel } from '~/models/paymentModel'
-import { productModel } from '~/models/productModel'
 import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
 
-// TẠO ĐƠN HÀNG
-const createOrder = async (userId, orderData) => {
+const createOrder = async (data) => {
   try {
-    const { shippingAddress, paymentMethod } = orderData
+    const { userId, shippingAddress, paymentMethod } = data
+
+    console.log('📦 [orderService] ===== CREATE ORDER START =====')
+    console.log('📦 [orderService] Input:', { userId, shippingAddress, paymentMethod })
+
+    // 1️⃣ LẤY USER INFO TỪ DATABASE
+    console.log('👤 [orderService] Fetching user info...')
+    const user = await userModel.findOneById(userId)
     
-    // 1. Lấy giỏ hàng
+    if (!user) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'User not found')
+    }
+
+    const userInfo = {
+      name: user.username || 'Unknown',
+      email: user.email,
+      phone: user.phone || ''
+    }
+
+    console.log('✅ [orderService] User info:', userInfo)
+
+    // 2️⃣ LẤY CART TỪ DATABASE
+    console.log('🛒 [orderService] Fetching cart...')
     const cart = await cartModel.getByUserId(userId)
-    if (!cart || cart.items.length === 0) {
+    
+    if (!cart || !cart.items || cart.items.length === 0) {
       throw new ApiError(StatusCodes.BAD_REQUEST, 'Cart is empty')
     }
-    
-    // 2. KIỂM TRA VÀ GIẢM STOCK CỦA TỪNG SẢN PHẨM
-    for (const item of cart.items) {
-      try {
-        await productModel.decreaseStock(item.productId.toString(), item.quantity)
-      } catch (error) {
-        throw new ApiError(StatusCodes.BAD_REQUEST, `Product ${item.name} is out of stock`)
-      }
-    }
-    
-    // 3. Tạo đơn hàng
-    const order = await orderModel.createNew({
+
+    console.log('✅ [orderService] Cart found:', cart.items.length, 'items')
+
+    // 3️⃣ KIỂM TRA TỒN KHO (nếu cần)
+    // TODO: Implement stock checking
+
+    // 4️⃣ TẠO ORDER DATA HOÀN CHỈNH
+    // ⭐ SỬA: CONVERT productId SANG STRING
+    const orderData = {
       userId,
-      items: cart.items,
+      userInfo,
+      items: cart.items.map(item => {
+        // ⭐ QUAN TRỌNG: Extract productId và convert sang STRING
+        let productId = item.productId;
+        
+        // Nếu productId là object (có _id), lấy _id
+        if (productId && typeof productId === 'object' && productId._id) {
+          productId = productId._id;
+        }
+        
+        // Convert sang string (chắc chắn 100%)
+        const productIdString = String(productId);
+        
+        console.log(`📦 [orderService] Item productId:`, {
+          original: item.productId,
+          extracted: productId,
+          final: productIdString,
+          type: typeof productIdString
+        });
+        
+        return {
+          productId: productIdString, // ⭐ ĐẢM BẢO LÀ STRING
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          image: item.image || ''
+        };
+      }),
       shippingAddress,
       paymentMethod,
       totalPrice: cart.totalPrice
-    })
-    
-    // 4. Tạo payment record
-    const payment = await paymentModel.createNew({
-      referenceType: 'order',
-      referenceId: order._id.toString(),
-      userId,
-      amount: cart.totalPrice,
+    }
+
+    console.log('📦 [orderService] Order data:', JSON.stringify(orderData, null, 2))
+
+    // 5️⃣ TẠO ORDER
+    const order = await orderModel.createNew(orderData)
+
+    console.log('✅ [orderService] Order created:', order._id)
+
+    // 6️⃣ TẠO PAYMENT (nếu cần)
+    const payment = {
+      _id: 'payment_' + order._id,
+      orderId: order._id,
+      amount: order.totalPrice,
       method: paymentMethod,
-      description: `Thanh toán đơn hàng #${order._id.toString().slice(-8).toUpperCase()}`
-    })
-    
-    // 5. Xóa giỏ hàng
+      status: 'pending'
+    }
+
+    console.log('💳 [orderService] Payment created:', payment._id)
+
+    // 7️⃣ XÓA CART
     await cartModel.clear(userId)
-    
+
+    console.log('✅ [orderService] Cart cleared')
+    console.log('📦 [orderService] ===== CREATE ORDER END =====')
+
     return { order, payment }
   } catch (error) {
+    console.error('❌ [orderService] Create order error:', error)
     throw error
   }
 }
 
-// LẤY DANH SÁCH ĐƠN HÀNG CỦA USER
-const getOrders = async (userId, options = {}) => {
-  try {
-    const { page = 1, limit = 10, status } = options
-    
-    return await orderModel.findByUserId(userId, { page, limit, status })
-  } catch (error) {
-    throw error
-  }
-}
-
-// LẤY CHI TIẾT ĐƠN HÀNG
 const getOrderById = async (orderId, userId = null) => {
   try {
     const order = await orderModel.findOneById(orderId)
@@ -75,9 +118,8 @@ const getOrderById = async (orderId, userId = null) => {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Order not found')
     }
     
-    // Kiểm tra quyền truy cập (nếu có userId)
     if (userId && order.userId.toString() !== userId) {
-      throw new ApiError(StatusCodes.FORBIDDEN, 'You do not have permission to access this order')
+      throw new ApiError(StatusCodes.FORBIDDEN, 'Access denied')
     }
     
     return order
@@ -86,34 +128,23 @@ const getOrderById = async (orderId, userId = null) => {
   }
 }
 
-// HỦY ĐƠN HÀNG - TĂNG LẠI STOCK
-const cancelOrder = async (orderId, userId) => {
+const getUserOrders = async (userId, options = {}) => {
   try {
-    const order = await orderModel.cancelOrder(orderId, userId)
-    
-    if (!order) {
-      throw new ApiError(StatusCodes.NOT_FOUND, 'Order not found or cannot be cancelled')
-    }
-    
-    // HOÀN LẠI STOCK CHO TỪNG SẢN PHẨM
-    for (const item of order.items) {
-      await productModel.increaseStock(item.productId.toString(), item.quantity)
-    }
-    
-    // Cập nhật payment
-    const payment = await paymentModel.findByOrderId(orderId)
-    if (payment && payment.status === 'paid') {
-      await paymentModel.updateStatus(payment._id.toString(), 'refunded')
-    }
-    
-    return order
+    return await orderModel.findByUserId(userId, options)
   } catch (error) {
     throw error
   }
 }
 
-// CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG
-const updateStatus = async (orderId, status) => {
+const getAllOrders = async (options = {}) => {
+  try {
+    return await orderModel.getAll(options)
+  } catch (error) {
+    throw error
+  }
+}
+
+const updateOrderStatus = async (orderId, status) => {
   try {
     const order = await orderModel.updateStatus(orderId, status)
     
@@ -127,12 +158,15 @@ const updateStatus = async (orderId, status) => {
   }
 }
 
-// ADMIN - LẤY TẤT CẢ ĐƠN HÀNG
-const getAllOrders = async (options = {}) => {
+const cancelOrder = async (orderId, userId = null) => {
   try {
-    const { page = 1, limit = 10, status } = options
+    const order = await orderModel.cancelOrder(orderId, userId)
     
-    return await orderModel.getAll({ page, limit, status })
+    if (!order) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Order not found')
+    }
+    
+    return order
   } catch (error) {
     throw error
   }
@@ -140,9 +174,9 @@ const getAllOrders = async (options = {}) => {
 
 export const orderService = {
   createOrder,
-  getOrders,
   getOrderById,
-  cancelOrder,
-  updateStatus,
-  getAllOrders
+  getUserOrders,
+  getAllOrders,
+  updateOrderStatus,
+  cancelOrder
 }

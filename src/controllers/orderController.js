@@ -1,41 +1,24 @@
+// backend/src/controllers/orderController.js
 import { StatusCodes } from 'http-status-codes'
 import { orderService } from '~/services/orderService'
 
 const createOrder = async (req, res, next) => {
   try {
-    const { userId, ...orderData } = req.body
+    console.log('📦 [orderController] ===== CREATE ORDER START =====')
+    console.log('📦 [orderController] Request body:', JSON.stringify(req.body, null, 2))
     
-    if (!userId) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        message: 'userId is required in request body'
-      })
-    }
+    const result = await orderService.createOrder(req.body)
     
-    const result = await orderService.createOrder(userId, orderData)
+    console.log('✅ [orderController] Order created successfully')
+    console.log('📦 [orderController] ===== CREATE ORDER END =====')
     
     res.status(StatusCodes.CREATED).json({
+      success: true,
       message: 'Order created successfully',
       ...result
     })
   } catch (error) {
-    next(error)
-  }
-}
-
-const getOrders = async (req, res, next) => {
-  try {
-    const { userId, page, limit, status } = req.query
-    
-    if (!userId) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        message: 'userId is required in query params'
-      })
-    }
-    
-    const result = await orderService.getOrders(userId, { page, limit, status })
-    
-    res.status(StatusCodes.OK).json(result)
-  } catch (error) {
+    console.error('❌ [orderController] Create order error:', error.message)
     next(error)
   }
 }
@@ -43,31 +26,12 @@ const getOrders = async (req, res, next) => {
 const getOrderById = async (req, res, next) => {
   try {
     const { id } = req.params
-    const { userId } = req.query
+    const userId = req.query.userId
     
     const order = await orderService.getOrderById(id, userId)
     
-    res.status(StatusCodes.OK).json(order)
-  } catch (error) {
-    next(error)
-  }
-}
-
-const cancelOrder = async (req, res, next) => {
-  try {
-    const { id } = req.params
-    const { userId } = req.body
-    
-    if (!userId) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        message: 'userId is required in request body'
-      })
-    }
-    
-    const order = await orderService.cancelOrder(id, userId)
-    
     res.status(StatusCodes.OK).json({
-      message: 'Order cancelled successfully',
+      success: true,
       order
     })
   } catch (error) {
@@ -75,16 +39,15 @@ const cancelOrder = async (req, res, next) => {
   }
 }
 
-const updateStatus = async (req, res, next) => {
+const getUserOrders = async (req, res, next) => {
   try {
-    const { id } = req.params
-    const { status } = req.body
+    const { userId, page, limit, status } = req.query
     
-    const order = await orderService.updateStatus(id, status)
+    const result = await orderService.getUserOrders(userId, { page, limit, status })
     
     res.status(StatusCodes.OK).json({
-      message: 'Order status updated successfully',
-      order
+      success: true,
+      ...result
     })
   } catch (error) {
     next(error)
@@ -97,7 +60,44 @@ const getAllOrders = async (req, res, next) => {
     
     const result = await orderService.getAllOrders({ page, limit, status })
     
-    res.status(StatusCodes.OK).json(result)
+    res.status(StatusCodes.OK).json({
+      success: true,
+      ...result
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+const updateOrderStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params
+    const { status } = req.body
+    
+    const order = await orderService.updateOrderStatus(id, status)
+    
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'Order status updated',
+      order
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+const cancelOrder = async (req, res, next) => {
+  try {
+    const { id } = req.params
+    const { userId } = req.body
+    
+    const order = await orderService.cancelOrder(id, userId)
+    
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'Order cancelled',
+      order
+    })
   } catch (error) {
     next(error)
   }
@@ -105,9 +105,9 @@ const getAllOrders = async (req, res, next) => {
 
 export const orderController = {
   createOrder,
-  getOrders,
   getOrderById,
-  cancelOrder,
-  updateStatus,
-  getAllOrders
+  getUserOrders,
+  getAllOrders,
+  updateOrderStatus,
+  cancelOrder
 }
