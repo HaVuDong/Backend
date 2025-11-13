@@ -10,14 +10,24 @@ import { userModel } from "~/models/userModel"
 const register = async (data) => {
   console.log("📩 Dữ liệu nhận được:", data)
 
-  const cleanEmail = data.email?.trim().toLowerCase()
-  const cleanUsername = data.username?.trim()
-  const cleanPhone = data.phone?.trim()
+  // ✅ 1. kiểm tra thiếu dữ liệu TRƯỚC, dùng raw data, không trim
+  const { email, username, password, phone, role } = data || {}
 
-  if (!cleanEmail || !data.password || !cleanPhone || !cleanUsername) {
+  if (!email || !username || !password || !phone) {
     throw new Error("Thiếu dữ liệu")
   }
 
+  // ✅ 2. Sau khi chắc chắn có đủ field mới trim/chuẩn hóa
+  const cleanEmail = email.trim().toLowerCase()
+  const cleanUsername = username.trim()
+  const cleanPhone = phone.trim()
+
+  // Nếu trim xong còn rỗng -> cũng coi là thiếu dữ liệu
+  if (!cleanEmail || !cleanUsername || !cleanPhone || !password.trim()) {
+    throw new Error("Thiếu dữ liệu")
+  }
+
+  // ✅ 3. Validate định dạng username
   const usernameRegex = /^[a-z0-9_]+$/
   if (!usernameRegex.test(cleanUsername)) {
     throw new Error(
@@ -25,20 +35,27 @@ const register = async (data) => {
     )
   }
 
+  // ✅ 4. Kiểm tra trùng username
   const existUsername = await userModel.findByUsername(cleanUsername.toLowerCase())
-  if (existUsername) throw new Error("Username đã tồn tại")
+  if (existUsername) {
+    throw new Error("Username đã tồn tại")
+  }
 
+  // ✅ 5. Kiểm tra trùng email
   const existEmail = await userModel.findByEmail(cleanEmail)
-  if (existEmail) throw new Error("Email đã tồn tại")
+  if (existEmail) {
+    throw new Error("Email đã tồn tại")
+  }
 
-  const hashedPassword = await bcrypt.hash(data.password, 10)
+  // ✅ 6. Hash password & tạo user
+  const hashedPassword = await bcrypt.hash(password, 10)
 
   const result = await userModel.createNew({
     username: cleanUsername.toLowerCase(),
     email: cleanEmail,
     password: hashedPassword,
     phone: cleanPhone,
-    role: data.role || "user",
+    role: role || "user",
     createdAt: new Date(),
     updatedAt: new Date()
   })
@@ -50,10 +67,9 @@ const register = async (data) => {
     username: cleanUsername.toLowerCase(),
     email: cleanEmail,
     phone: cleanPhone,
-    role: data.role || "user"
+    role: role || "user"
   }
 }
-
 
 // 🟢 Đăng nhập
 const login = async ({ identifier, password }) => {
@@ -120,7 +136,7 @@ const remove = async (id) => userModel.deleteOne(id)
 export const userService = {
   register,
   login,
-  findOneById,  // ⬅️ THÊM DÒNG NÀY
+  findOneById,
   getAll,
   getById,
   create,

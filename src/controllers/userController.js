@@ -7,28 +7,78 @@ import { userService } from "~/services/userService"
 const register = async (req, res) => {
   try {
     const user = await userService.register(req.body)
-    res.status(201).json({ success: true, message: "Đăng ký thành công", data: user })
+
+    return res.status(201).json({
+      success: true,
+      message: "Đăng ký thành công",
+      data: user
+    })
   } catch (error) {
-    console.error("❌ Lỗi register:", error)
-    res.status(500).json({ success: false, message: error.message })
+    console.error("❌ Lỗi register:", error.message)
+
+    // 🎯 Những lỗi do người dùng nhập sai → trả về 400
+    const badRequestErrors = [
+      "Thiếu dữ liệu",
+      "Username đã tồn tại",
+      "Email đã tồn tại",
+      "Username chỉ được chứa chữ thường, số hoặc dấu gạch dưới, không dấu và không khoảng trắng!"
+    ]
+
+    if (badRequestErrors.includes(error.message)) {
+      return res.status(400).json({
+        success: false,
+        message: error.message
+      })
+    }
+
+    // 🎯 Các lỗi khác: server lỗi, database lỗi → 500
+    return res.status(500).json({
+      success: false,
+      message: "Server error"
+    })
   }
 }
 
+
+// 🟢 Đăng nhập
 // 🟢 Đăng nhập
 const login = async (req, res) => {
   try {
-    const result = await userService.login(req.body)
-    res.status(200).json({
+    const result = await userService.login(req.body);
+
+    return res.status(200).json({
       success: true,
       message: "Đăng nhập thành công",
       token: result.token,
       user: result.user
-    })
+    });
+
   } catch (error) {
-    console.error("❌ Lỗi login:", error)
-    res.status(500).json({ success: false, message: error.message })
+    console.error("❌ Lỗi login:", error.message);
+
+    // ⭐ Nếu là lỗi người dùng → trả về 400
+    const userErrors = [
+      "Thiếu username/email hoặc mật khẩu",
+      "User not found",
+      "Sai mật khẩu",
+      "Thiếu dữ liệu"
+    ];
+
+    if (userErrors.includes(error.message)) {
+      return res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+
+    // ⭐ Còn lại là lỗi server thật → 500
+    return res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
   }
-}
+};
+
 
 const getCurrentUser = async (req, res, next) => {
   try {
