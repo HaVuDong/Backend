@@ -175,6 +175,51 @@ const remove = async (req, res) => {
   }
 }
 
+const resetPassword = async (req, res) => {
+  try {
+    const { username, phone, newPassword } = req.body;
+
+    if (!username || !phone || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Thiếu thông tin: username, phone hoặc mật khẩu mới"
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Mật khẩu mới phải có ít nhất 6 ký tự"
+      });
+    }
+
+    const result = await userService.resetPassword(username, phone, newPassword);
+
+    return res.status(200).json({
+      success: true,
+      message: result.message
+    });
+  } catch (error) {
+    console.error("❌ Lỗi reset password:", error.message);
+
+    const userErrors = [
+      "Không tìm thấy tài khoản với thông tin này"
+    ];
+
+    if (userErrors.includes(error.message)) {
+      return res.status(404).json({
+        success: false,
+        message: error.message
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
+  }
+};
+
 export const userController = {
   register,
   login,
@@ -183,5 +228,6 @@ export const userController = {
   getById,
   create,
   update,
-  remove
+  remove,
+  resetPassword
 }

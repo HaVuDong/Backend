@@ -16,7 +16,9 @@
     "seed": "babel-node ./src/seeders/index.js",
     "seed:categories": "babel-node ./src/seeders/categorySeed.js",
     "seed:products": "babel-node ./src/seeders/productSeed.js",
-    "seed:clear": "babel-node ./src/seeders/clearData.js"
+    "seed:clear": "babel-node ./src/seeders/clearData.js",
+    "seed:users": "babel-node ./src/seeders/userSeeder.js"
+
   },
   "dependencies": {
     "@babel/runtime": "^7.22.10",

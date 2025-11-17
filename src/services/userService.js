@@ -1,3 +1,4 @@
+/* eslint-disable no-useless-catch */
 /* eslint-disable quotes */
 /* eslint-disable no-console */
 /* eslint-disable no-undef */
@@ -124,6 +125,29 @@ const findOneById = async (id) => {
     throw error
   }
 }
+const resetPassword = async (username, phone, newPassword) => {
+  try {
+    // Tìm user theo username và phone
+    const user = await userModel.findByUsernameAndPhone(username, phone)
+    if (!user) {
+      throw new Error("Không tìm thấy tài khoản với thông tin này")
+    }
+
+    // Hash mật khẩu mới
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt)
+
+    // Cập nhật mật khẩu
+    const updated = await userModel.updatePassword(user._id.toString(), hashedPassword)
+
+    return {
+      success: true,
+      message: "Đặt lại mật khẩu thành công"
+    };
+  } catch (error) {
+    throw error
+  }
+}
 
 // 🟢 Các hàm khác
 const getAll = async () => userModel.getAll()
@@ -141,5 +165,6 @@ export const userService = {
   getById,
   create,
   update,
-  remove
+  remove,
+  resetPassword
 }

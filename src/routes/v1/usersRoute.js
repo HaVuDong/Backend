@@ -9,7 +9,7 @@ const Router = express.Router()
 // Auth routes
 Router.post("/register", userController.register)
 Router.post("/login", userController.login)
-
+Router.post('/reset-password', userController.resetPassword)
 // Route chỉ dành cho admin test
 Router.get("/admin-only", authMiddleware, isAdmin, (req, res) => {
   res.json({ success: true, message: "Welcome Admin!" })

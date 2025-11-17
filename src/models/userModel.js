@@ -1,3 +1,4 @@
+/* eslint-disable no-useless-catch */
 /* eslint-disable quotes */
 /* eslint-disable no-undef */
 /* eslint-disable indent */
@@ -79,6 +80,35 @@ const deleteOne = async (id) => {
   return result.deletedCount > 0
 }
 
+const updatePassword = async (userId, hashedPassword) => {
+  try {
+    const result = await GET_DB()
+      .collection(USER_COLLECTION_NAME)
+      .findOneAndUpdate(
+        { _id: new ObjectId(userId) },
+        { $set: { password: hashedPassword, updatedAt: Date.now() } },
+        { returnDocument: 'after' }
+      );
+    return result;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const findByUsernameAndPhone = async (username, phone) => {
+  try {
+    const result = await GET_DB()
+      .collection(USER_COLLECTION_NAME)
+      .findOne({ 
+        username: username.toLowerCase(),
+        phone: phone
+      });
+    return result;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const userModel = {
   USER_COLLECTION_NAME,
   createNew,
@@ -87,5 +117,7 @@ export const userModel = {
   findByUsername,
   update,
   deleteOne,
-  getAll
+  getAll,
+  findByUsernameAndPhone, // ⭐ Thêm
+  updatePassword
 }

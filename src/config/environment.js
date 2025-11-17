@@ -23,7 +23,7 @@ export const env = {
   MOMO_ENDPOINT: process.env.MOMO_ENDPOINT,
   MOMO_REDIRECT_URL: process.env.MOMO_REDIRECT_URL,
   MOMO_IPN_URL: process.env.MOMO_IPN_URL,
-  
+
   // VNPAY
   VNPAY_TMN_CODE: process.env.VNPAY_TMN_CODE,
   VNPAY_HASH_SECRET: process.env.VNPAY_HASH_SECRET,

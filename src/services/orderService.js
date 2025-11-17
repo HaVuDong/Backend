@@ -1,3 +1,5 @@
+/* eslint-disable quotes */
+/* eslint-disable no-console */
 // backend/src/services/orderService.js
 /* eslint-disable no-useless-catch */
 import { orderModel } from '~/models/orderModel'
@@ -16,7 +18,7 @@ const createOrder = async (data) => {
     // 1️⃣ LẤY USER INFO TỪ DATABASE
     console.log('👤 [orderService] Fetching user info...')
     const user = await userModel.findOneById(userId)
-    
+
     if (!user) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'User not found')
     }
