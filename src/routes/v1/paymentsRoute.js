@@ -22,6 +22,16 @@ Router.get('/order/:orderId', paymentController.getPaymentByOrderId)
 Router.post('/cod/:orderId/confirm', paymentController.confirmCODPayment)
 
 // ============================================
+// BANK TRANSFER ROUTES
+// ============================================
+
+// ✅ Admin xác nhận thanh toán - ĐẶT TRƯỚC để tránh conflict với route động
+Router.post('/bank/:orderId/admin-confirm', paymentController.adminConfirmBankTransfer)
+
+// POST /v1/payments/bank/:orderId/confirm - User xác nhận đã chuyển khoản (KHÔNG CẦN AUTH)
+Router.post('/bank/:orderId/confirm', paymentController.confirmBankTransferPayment)
+
+// ============================================
 // MOMO ROUTES
 // ============================================
 

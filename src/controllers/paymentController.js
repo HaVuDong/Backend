@@ -59,6 +59,45 @@ const confirmCODPayment = async (req, res, next) => {
   }
 }
 
+// Xác nhận thanh toán Bank Transfer (User)
+const confirmBankTransferPayment = async (req, res, next) => {
+  try {
+    const { orderId } = req.params
+    const { userId } = req.body
+    
+    console.log('🏦 [paymentController] Bank transfer confirm:', { orderId, userId })
+    
+    const payment = await paymentService.confirmBankTransferPayment(orderId, userId)
+    
+    res.status(StatusCodes.OK).json({
+      message: 'Bank transfer payment confirmed successfully',
+      payment
+    })
+  } catch (error) {
+    console.error('❌ [paymentController] Bank transfer error:', error)
+    next(error)
+  }
+}
+
+// ✅ THÊM MỚI: Admin xác nhận thanh toán Bank Transfer
+const adminConfirmBankTransfer = async (req, res, next) => {
+  try {
+    const { orderId } = req.params
+    
+    console.log('👮 [paymentController] Admin confirming bank transfer:', orderId)
+    
+    const payment = await paymentService.adminConfirmBankTransfer(orderId)
+    
+    res.status(StatusCodes.OK).json({
+      message: 'Payment confirmed by admin successfully',
+      payment
+    })
+  } catch (error) {
+    console.error('❌ [paymentController] Admin confirm error:', error)
+    next(error)
+  }
+}
+
 // ============================================
 // MOMO PAYMENT
 // ============================================
@@ -340,6 +379,8 @@ export const paymentController = {
   
   // COD
   confirmCODPayment,
+  confirmBankTransferPayment,
+  adminConfirmBankTransfer, // ✅ THÊM VÀO EXPORT
   
   // MoMo
   createMoMoPayment,

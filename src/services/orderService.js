@@ -5,6 +5,7 @@
 import { orderModel } from '~/models/orderModel'
 import { userModel } from '~/models/userModel'
 import { cartModel } from '~/models/cartModel'
+import { paymentModel } from '~/models/paymentModel'
 import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
 
@@ -88,16 +89,25 @@ const createOrder = async (data) => {
 
     console.log('✅ [orderService] Order created:', order._id)
 
-    // 6️⃣ TẠO PAYMENT (nếu cần)
-    const payment = {
-      _id: 'payment_' + order._id,
-      orderId: order._id,
+    // 6️⃣ TẠO PAYMENT TRONG DATABASE
+    const paymentData = {
+      referenceType: 'order',
+      referenceId: order._id.toString(),
+      userId: userId,
       amount: order.totalPrice,
       method: paymentMethod,
-      status: 'pending'
+      status: 'pending',
+      description: `Payment for order ${order._id}`
     }
 
-    console.log('💳 [orderService] Payment created:', payment._id)
+    const payment = await paymentModel.createNew(paymentData)
+    console.log('✅ [orderService] Payment created in DB:', payment._id)
+
+    // ✅ NẾU PAYMENT METHOD LÀ BANK, TỰ ĐỘNG SET STATUS THÀNH AWAITING_CONFIRMATION
+    if (paymentMethod === 'bank') {
+      await orderModel.updateStatus(order._id.toString(), 'awaiting_confirmation')
+      console.log('✅ [orderService] Order status set to awaiting_confirmation for bank payment')
+    }
 
     // 7️⃣ XÓA CART
     await cartModel.clear(userId)
@@ -148,14 +158,19 @@ const getAllOrders = async (options = {}) => {
 
 const updateOrderStatus = async (orderId, status) => {
   try {
+    console.log('📝 [orderService] Updating order status:', { orderId, status })
+    
     const order = await orderModel.updateStatus(orderId, status)
     
     if (!order) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Order not found')
     }
     
+    console.log('✅ [orderService] Order status updated successfully')
+    
     return order
   } catch (error) {
+    console.error('❌ [orderService] Update status error:', error)
     throw error
   }
 }

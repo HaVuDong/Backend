@@ -18,10 +18,14 @@ const getOverviewStats = async () => {
     const totalOrders = await db.collection('orders').countDocuments({})
     const totalBookings = await db.collection('bookings').countDocuments({})
     
-    // Tính tổng doanh thu từ payments đã thanh toán
-    const revenueResult = await db.collection('payments').aggregate([
-      { $match: { status: 'paid' } },
-      { $group: { _id: null, totalRevenue: { $sum: '$amount' } } }
+    // ✅ TÍNH TỔNG DOANH THU TỪ ORDERS ĐÃ GIAO VÀ ĐÃ XÁC NHẬN
+    const revenueResult = await db.collection('orders').aggregate([
+      { 
+        $match: { 
+          status: { $in: ['delivered', 'confirmed'] } // Chỉ tính orders đã giao và đã xác nhận
+        } 
+      },
+      { $group: { _id: null, totalRevenue: { $sum: '$totalPrice' } } }
     ]).toArray()
     
     const totalRevenue = revenueResult.length > 0 ? revenueResult[0].totalRevenue : 0
@@ -82,49 +86,50 @@ const getRevenueByPeriod = async (startDate, endDate, period = 'day') => {
     switch (period) {
       case 'hour':
         groupFormat = {
-          year: { $year: { $toDate: '$paidAt' } },
-          month: { $month: { $toDate: '$paidAt' } },
-          day: { $dayOfMonth: { $toDate: '$paidAt' } },
-          hour: { $hour: { $toDate: '$paidAt' } }
+          year: { $year: { $toDate: '$updatedAt' } },
+          month: { $month: { $toDate: '$updatedAt' } },
+          day: { $dayOfMonth: { $toDate: '$updatedAt' } },
+          hour: { $hour: { $toDate: '$updatedAt' } }
         }
         break
       case 'day':
         groupFormat = {
-          year: { $year: { $toDate: '$paidAt' } },
-          month: { $month: { $toDate: '$paidAt' } },
-          day: { $dayOfMonth: { $toDate: '$paidAt' } }
+          year: { $year: { $toDate: '$updatedAt' } },
+          month: { $month: { $toDate: '$updatedAt' } },
+          day: { $dayOfMonth: { $toDate: '$updatedAt' } }
         }
         break
       case 'month':
         groupFormat = {
-          year: { $year: { $toDate: '$paidAt' } },
-          month: { $month: { $toDate: '$paidAt' } }
+          year: { $year: { $toDate: '$updatedAt' } },
+          month: { $month: { $toDate: '$updatedAt' } }
         }
         break
       case 'year':
         groupFormat = {
-          year: { $year: { $toDate: '$paidAt' } }
+          year: { $year: { $toDate: '$updatedAt' } }
         }
         break
       default:
         groupFormat = {
-          year: { $year: { $toDate: '$paidAt' } },
-          month: { $month: { $toDate: '$paidAt' } },
-          day: { $dayOfMonth: { $toDate: '$paidAt' } }
+          year: { $year: { $toDate: '$updatedAt' } },
+          month: { $month: { $toDate: '$updatedAt' } },
+          day: { $dayOfMonth: { $toDate: '$updatedAt' } }
         }
     }
     
-    const result = await db.collection('payments').aggregate([
+    // ✅ TÍNH DOANH THU TỪ ORDERS ĐÃ GIAO VÀ ĐÃ XÁC NHẬN
+    const result = await db.collection('orders').aggregate([
       {
         $match: {
-          status: 'paid',
-          paidAt: { $gte: start, $lte: end }
+          status: { $in: ['delivered', 'confirmed'] },
+          updatedAt: { $gte: start, $lte: end }
         }
       },
       {
         $group: {
           _id: groupFormat,
-          revenue: { $sum: '$amount' },
+          revenue: { $sum: '$totalPrice' },
           count: { $sum: 1 }
         }
       },

@@ -28,8 +28,9 @@ const ORDER_COLLECTION_SCHEMA = Joi.object({
 
   shippingAddress: Joi.string().required().min(10).trim(),
   
+  // ✅ THÊM STATUS MỚI
   status: Joi.string()
-    .valid('pending', 'confirmed', 'shipped', 'delivered', 'cancelled')
+    .valid('pending', 'awaiting_confirmation', 'confirmed', 'shipped', 'delivered', 'cancelled')
     .default('pending'),
 
   paymentMethod: Joi.string().valid('cod', 'momo', 'vnpay', 'bank').required(),
@@ -151,8 +152,16 @@ const getAll = async (options = {}) => {
 
 const updateStatus = async (id, status) => {
   try {
-    const validStatuses = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled']
+    console.log('📝 [orderModel] Updating status:', { id, status })
+    
+    // ✅ THÊM STATUS MỚI VÀO VALIDATION
+    const validStatuses = ['pending', 'awaiting_confirmation', 'confirmed', 'shipped', 'delivered', 'cancelled']
     if (!validStatuses.includes(status)) throw new Error(`Invalid status: ${status}`)
+
+    if (!ObjectId.isValid(id)) {
+      console.error('❌ Invalid ObjectId:', id)
+      return null
+    }
 
     const db = GET_DB()
     const result = await db.collection(ORDER_COLLECTION_NAME).findOneAndUpdate(
@@ -161,8 +170,11 @@ const updateStatus = async (id, status) => {
       { returnDocument: 'after' }
     )
 
-    return result.value
+    console.log('📝 [orderModel] Update result:', result ? 'Success' : 'Not found')
+    
+    return result
   } catch (error) {
+    console.error('❌ [orderModel] Update status error:', error)
     throw error
   }
 }
