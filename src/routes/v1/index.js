@@ -14,6 +14,7 @@ import { paymentRoute } from '~/routes/v1/paymentsRoute'
 import { categoryRoute } from '~/routes/v1/categoryRoute'
 import { productRoute } from '~/routes/v1/productsRoute'
 import { adminRoute } from "~/routes/v1/adminRoute"
+import { postsRoute } from '~/routes/v1/postsRoute'
 
 const Router = express.Router()
 
@@ -36,4 +37,5 @@ Router.use('/payments', paymentRoute)
 Router.use('/categories', categoryRoute)
 Router.use('/products', productRoute)
 Router.use('/admin', adminRoute)
+Router.use('/posts', postsRoute)
 export const API_V1 = Router

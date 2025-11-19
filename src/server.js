@@ -11,6 +11,7 @@ import { CLOSE_DB, CONNECT_DB, GET_DB } from '~/config/mongodb.js'
 import { env } from '~/config/environment.js'
 import { API_V1 } from './routes/v1/index.js'
 import { errorHandlingMiddleware } from './middlewares/errorHandlingMiddleware.js'
+import { startAutoCrawler } from '~/cron/autoFootballNews.js'
 
 // =====================
 // 🚀 KHỞI TẠO SERVER
@@ -77,6 +78,9 @@ const START_SERVER = () => {
 CONNECT_DB()
   .then(async () => {
     console.log('✅ Connected to MongoDB Cloud Atlas!')
+    
+    // 🤖 Kích hoạt auto crawler tin bóng đá
+    startAutoCrawler()
   })
   .then(() => START_SERVER())
   .catch(error => {
